@@ -11,6 +11,7 @@ const workoutRoutes = require('./routes/workout');
 const studyRoutes = require('./routes/study');
 const dashboardRoutes = require('./routes/dashboard');
 const reportRoutes = require('./routes/report');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/workout', workoutRoutes);
 app.use('/api/study', studyRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/report', reportRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -58,7 +60,7 @@ app.use((err, req, res, next) => {
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB connected');
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 5001;
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })
   .catch(err => {

@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
   goals: {
     dailyCalorieIntake: { type: Number, default: 2000 },
     dailyCalorieBurn: { type: Number, default: 500 },

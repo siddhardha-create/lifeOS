@@ -35,11 +35,7 @@ export default function Layout() {
           </div>
           <AnimatePresence>
             {(sidebarOpen || mobileOpen) && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-              >
+              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
                 <h1 className="text-xl font-bold gradient-text">LifeOS</h1>
                 <p className="text-xs text-gray-500">Life Management</p>
               </motion.div>
@@ -60,27 +56,37 @@ export default function Layout() {
             <span className="text-xl flex-shrink-0">{item.icon}</span>
             <AnimatePresence>
               {(sidebarOpen || mobileOpen) && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="font-medium text-sm"
-                >
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="font-medium text-sm">
                   {item.label}
                 </motion.span>
               )}
             </AnimatePresence>
           </NavLink>
         ))}
+
+        {/* Admin link — only visible to admins */}
+        {user?.isAdmin && (
+          <NavLink
+            to="/admin"
+            onClick={() => setMobileOpen(false)}
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''} border border-yellow-500/20 bg-yellow-500/5 mt-2`}
+          >
+            <span className="text-xl flex-shrink-0">🛡️</span>
+            <AnimatePresence>
+              {(sidebarOpen || mobileOpen) && (
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="font-medium text-sm text-yellow-400">
+                  Admin Panel
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </NavLink>
+        )}
       </nav>
 
       {/* Bottom section */}
       <div className="p-4 border-t border-white/10 space-y-2">
         {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          className="nav-item w-full"
-        >
+        <button onClick={toggleTheme} className="nav-item w-full">
           <span className="text-xl">{theme === 'dark' ? '☀️' : '🌙'}</span>
           {(sidebarOpen || mobileOpen) && (
             <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
@@ -94,13 +100,11 @@ export default function Layout() {
           </div>
           <AnimatePresence>
             {(sidebarOpen || mobileOpen) && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.name}
+                  {user?.isAdmin && <span className="ml-1 text-xs text-yellow-400">👑</span>}
+                </p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </motion.div>
             )}
@@ -124,7 +128,6 @@ export default function Layout() {
         className="hidden lg:flex flex-col bg-gradient-sidebar border-r border-white/10 relative flex-shrink-0"
       >
         <SidebarContent />
-        {/* Toggle button */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="absolute -right-3 top-8 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-xs hover:bg-blue-700 transition-colors z-10"
@@ -138,16 +141,12 @@ export default function Layout() {
         {mobileOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
               className="lg:hidden fixed inset-0 bg-black/60 z-40"
             />
             <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
               transition={{ type: 'spring', damping: 25 }}
               className="lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-[#16213e] border-r border-white/10 z-50"
             >
@@ -161,10 +160,7 @@ export default function Layout() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
+          <button onClick={() => setMobileOpen(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             ☰
           </button>
           <h1 className="font-bold gradient-text">LifeOS</h1>
@@ -175,12 +171,7 @@ export default function Layout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="h-full"
-          >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="h-full">
             <Outlet />
           </motion.div>
         </main>
