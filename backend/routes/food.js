@@ -41,7 +41,6 @@ router.get('/day/:date', async (req, res) => {
     date.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
-
     const entry = await FoodEntry.findOne({
       user: req.user._id,
       date: { $gte: date, $lte: endDate },
@@ -64,7 +63,7 @@ router.post('/nutrition-lookup', async (req, res) => {
   }
 });
 
-// POST/PUT upsert food entry for a day
+// POST add a single food item to a meal (APPENDS, does not replace)
 router.post('/entry', async (req, res) => {
   try {
     const { date, meal, items, waterIntake, notes } = req.body;
@@ -82,27 +81,33 @@ router.post('/entry', async (req, res) => {
       })
     );
 
-    const updateData = {};
-    if (meal && processedItems.length > 0) {
-      updateData[meal] = { items: processedItems };
-    }
-    if (waterIntake !== undefined) updateData.waterIntake = waterIntake;
-    if (notes) updateData.notes = notes;
-
     const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999);
 
     let entry = await FoodEntry.findOne({ user: req.user._id, date: { $gte: dayStart, $lte: dayEnd } });
 
     if (entry) {
-      Object.assign(entry, updateData);
+      // APPEND new items to existing meal items (fix for single-item bug)
+      if (meal && processedItems.length > 0) {
+        if (!entry[meal]) entry[meal] = { items: [] };
+        if (!entry[meal].items) entry[meal].items = [];
+        entry[meal].items.push(...processedItems);
+        entry.markModified(meal);
+      }
+      if (waterIntake !== undefined) entry.waterIntake = waterIntake;
+      if (notes) entry.notes = notes;
       await entry.save();
     } else {
-      entry = await FoodEntry.create({
+      const createData = {
         user: req.user._id,
         date: entryDate,
-        ...updateData,
-      });
+      };
+      if (meal && processedItems.length > 0) {
+        createData[meal] = { items: processedItems };
+      }
+      if (waterIntake !== undefined) createData.waterIntake = waterIntake;
+      if (notes) createData.notes = notes;
+      entry = await FoodEntry.create(createData);
     }
 
     res.json({ success: true, data: entry });
@@ -117,8 +122,8 @@ router.delete('/entry/:entryId/meal/:meal/item/:itemId', async (req, res) => {
     const { entryId, meal, itemId } = req.params;
     const entry = await FoodEntry.findOne({ _id: entryId, user: req.user._id });
     if (!entry) return res.status(404).json({ success: false, message: 'Entry not found' });
-
     entry[meal].items = entry[meal].items.filter(item => item._id.toString() !== itemId);
+    entry.markModified(meal);
     await entry.save();
     res.json({ success: true, data: entry });
   } catch (error) {
