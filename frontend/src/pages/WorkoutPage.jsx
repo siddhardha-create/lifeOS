@@ -4,99 +4,26 @@ import api from '../utils/api';
 import { getWeekDays, formatDate, DAY_SHORT } from '../utils/dateUtils';
 import Modal, { ConfirmModal } from '../components/common/Modal';
 import toast from 'react-hot-toast';
+import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 
-// Exercise database with accurate MET values (from 2024 Compendium of Physical Activities)
-// Calories = MET × weight(kg) × duration(hours)  [default 70kg]
-const EXERCISE_DATABASE = [
-  // Cardio
-  { name: 'Running (moderate, 6mph)', category: 'cardio', met: 9.8, icon: '🏃' },
-  { name: 'Running (slow, 5mph)', category: 'cardio', met: 8.3, icon: '🏃' },
-  { name: 'Running (fast, 7.5mph)', category: 'cardio', met: 11.0, icon: '🏃' },
-  { name: 'Jogging', category: 'cardio', met: 7.0, icon: '🏃' },
-  { name: 'Walking (brisk)', category: 'cardio', met: 4.3, icon: '🚶' },
-  { name: 'Walking (moderate)', category: 'cardio', met: 3.5, icon: '🚶' },
-  { name: 'Walking (uphill)', category: 'cardio', met: 6.0, icon: '🚶' },
-  { name: 'Cycling (moderate, 12-14mph)', category: 'cardio', met: 8.0, icon: '🚴' },
-  { name: 'Cycling (leisure)', category: 'cardio', met: 4.0, icon: '🚴' },
-  { name: 'Cycling (vigorous, 16-19mph)', category: 'cardio', met: 10.0, icon: '🚴' },
-  { name: 'Cycling (stationary, moderate)', category: 'cardio', met: 5.5, icon: '🚴' },
-  { name: 'Cycling (stationary, vigorous)', category: 'cardio', met: 8.8, icon: '🚴' },
-  { name: 'Swimming (laps, moderate)', category: 'cardio', met: 7.0, icon: '🏊' },
-  { name: 'Swimming (leisure)', category: 'cardio', met: 6.0, icon: '🏊' },
-  { name: 'Swimming (laps, vigorous)', category: 'cardio', met: 10.0, icon: '🏊' },
-  { name: 'Jump Rope (moderate)', category: 'cardio', met: 10.0, icon: '⚡' },
-  { name: 'Jump Rope (fast)', category: 'cardio', met: 12.3, icon: '⚡' },
-  { name: 'Stair Climbing', category: 'cardio', met: 8.8, icon: '🪜' },
-  { name: 'Elliptical (moderate)', category: 'cardio', met: 5.0, icon: '🔄' },
-  { name: 'Elliptical (vigorous)', category: 'cardio', met: 6.5, icon: '🔄' },
-  { name: 'Rowing (moderate)', category: 'cardio', met: 7.0, icon: '🚣' },
-  { name: 'Rowing (vigorous)', category: 'cardio', met: 8.5, icon: '🚣' },
-
-  // HIIT & Classes
-  { name: 'HIIT', category: 'hiit', met: 8.0, icon: '🔥' },
-  { name: 'HIIT (vigorous)', category: 'hiit', met: 10.0, icon: '🔥' },
-  { name: 'Tabata', category: 'hiit', met: 8.0, icon: '🔥' },
-  { name: 'CrossFit', category: 'hiit', met: 9.0, icon: '🔥' },
-  { name: 'Circuit Training', category: 'hiit', met: 8.0, icon: '🔄' },
-  { name: 'Aerobics (high impact)', category: 'cardio', met: 7.0, icon: '💃' },
-  { name: 'Aerobics (low impact)', category: 'cardio', met: 5.0, icon: '💃' },
-  { name: 'Zumba', category: 'cardio', met: 6.5, icon: '💃' },
-  { name: 'Cardio Kickboxing', category: 'cardio', met: 7.0, icon: '🥊' },
-
-  // Strength Training
-  { name: 'Weight Training (general)', category: 'strength', met: 3.5, icon: '🏋️' },
-  { name: 'Weight Training (vigorous)', category: 'strength', met: 6.0, icon: '🏋️' },
-  { name: 'Bench Press', category: 'strength', met: 3.8, icon: '🏋️' },
-  { name: 'Squat', category: 'strength', met: 5.0, icon: '🏋️' },
-  { name: 'Deadlift', category: 'strength', met: 6.0, icon: '🏋️' },
-  { name: 'Pull Ups', category: 'strength', met: 4.0, icon: '💪' },
-  { name: 'Push Ups', category: 'strength', met: 3.8, icon: '💪' },
-  { name: 'Dumbbell Training', category: 'strength', met: 3.5, icon: '🏋️' },
-  { name: 'Barbell Training', category: 'strength', met: 5.0, icon: '🏋️' },
-  { name: 'Kettlebell Training', category: 'strength', met: 8.0, icon: '🏋️' },
-  { name: 'Bodyweight Exercises', category: 'strength', met: 4.0, icon: '💪' },
-  { name: 'Powerlifting', category: 'strength', met: 6.0, icon: '🏋️' },
-  { name: 'Sit Ups', category: 'strength', met: 2.8, icon: '💪' },
-  { name: 'Plank', category: 'strength', met: 3.0, icon: '💪' },
-
-  // Flexibility
-  { name: 'Yoga (hatha)', category: 'flexibility', met: 2.5, icon: '🧘' },
-  { name: 'Yoga (vinyasa)', category: 'flexibility', met: 4.0, icon: '🧘' },
-  { name: 'Yoga (power)', category: 'flexibility', met: 4.5, icon: '🧘' },
-  { name: 'Stretching', category: 'flexibility', met: 2.3, icon: '🧘' },
-  { name: 'Pilates', category: 'flexibility', met: 3.0, icon: '🧘' },
-  { name: 'Pilates (vigorous)', category: 'flexibility', met: 4.0, icon: '🧘' },
-
-  // Sports
-  { name: 'Football (Soccer)', category: 'sports', met: 7.0, icon: '⚽' },
-  { name: 'Basketball', category: 'sports', met: 6.5, icon: '🏀' },
-  { name: 'Cricket', category: 'sports', met: 4.8, icon: '🏏' },
-  { name: 'Badminton', category: 'sports', met: 5.5, icon: '🏸' },
-  { name: 'Tennis (singles)', category: 'sports', met: 8.0, icon: '🎾' },
-  { name: 'Tennis (doubles)', category: 'sports', met: 5.0, icon: '🎾' },
-  { name: 'Table Tennis', category: 'sports', met: 4.0, icon: '🏓' },
-  { name: 'Volleyball', category: 'sports', met: 4.0, icon: '🏐' },
-  { name: 'Boxing (sparring)', category: 'sports', met: 9.0, icon: '🥊' },
-  { name: 'Boxing (bag)', category: 'sports', met: 6.0, icon: '🥊' },
-  { name: 'Martial Arts', category: 'sports', met: 8.0, icon: '🥋' },
-  { name: 'Kabaddi', category: 'sports', met: 7.0, icon: '🤼' },
-  { name: 'Hockey', category: 'sports', met: 7.5, icon: '🏑' },
-  { name: 'Hiking', category: 'sports', met: 6.0, icon: '⛰️' },
-  { name: 'Rock Climbing', category: 'sports', met: 8.0, icon: '🧗' },
-  { name: 'Dancing', category: 'sports', met: 5.0, icon: '💃' },
-];
-
-const CATEGORIES = ['all', 'cardio', 'strength', 'hiit', 'flexibility', 'sports'];
+const CATEGORIES = ['All', 'cardio', 'strength', 'hiit', 'flexibility', 'sports'];
 const CATEGORY_COLORS = {
-  cardio: 'text-orange-400',
-  strength: 'text-blue-400',
-  hiit: 'text-red-400',
-  flexibility: 'text-green-400',
-  sports: 'text-purple-400',
+  cardio: 'text-orange-400 bg-orange-400/10',
+  strength: 'text-blue-400 bg-blue-400/10',
+  hiit: 'text-red-400 bg-red-400/10',
+  flexibility: 'text-green-400 bg-green-400/10',
+  sports: 'text-purple-400 bg-purple-400/10',
+};
+const CATEGORY_LABELS = {
+  cardio: '🏃 Cardio',
+  strength: '🏋️ Strength',
+  hiit: '🔥 HIIT',
+  flexibility: '🧘 Flexibility',
+  sports: '⚽ Sports',
 };
 
 const emptyExercise = { name: '', duration: 30, sets: '', reps: '', weight: '', caloriesBurned: '', notes: '' };
-const DEFAULT_USER_WEIGHT = 70; // kg
+const DEFAULT_USER_WEIGHT = 70;
 
 export default function WorkoutPage() {
   const [weekDays, setWeekDays] = useState(getWeekDays());
@@ -111,6 +38,7 @@ export default function WorkoutPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [liveCalories, setLiveCalories] = useState(null);
   const [userWeight, setUserWeight] = useState(DEFAULT_USER_WEIGHT);
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const suggestionRef = useRef(null);
 
   const fetchWeekData = async () => {
@@ -142,20 +70,19 @@ export default function WorkoutPage() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Live calorie calculation as user types name/duration
+  // Live calorie calculation
   useEffect(() => {
     if (formExercise.name && formExercise.duration) {
       const match = EXERCISE_DATABASE.find(e =>
-        e.name.toLowerCase().includes(formExercise.name.toLowerCase()) ||
-        formExercise.name.toLowerCase().includes(e.name.toLowerCase().split(' ')[0])
+        e.name.toLowerCase() === formExercise.name.toLowerCase() ||
+        e.name.toLowerCase().includes(formExercise.name.toLowerCase())
       );
       if (match) {
         const cal = Math.round(match.met * userWeight * (formExercise.duration / 60));
-        setLiveCalories({ calories: cal, met: match.met, exerciseName: match.name });
+        setLiveCalories({ calories: cal, met: match.met, name: match.name });
       } else {
-        // Default MET 4.0 for unknown exercise
         const cal = Math.round(4.0 * userWeight * (formExercise.duration / 60));
-        setLiveCalories({ calories: cal, met: 4.0, exerciseName: null });
+        setLiveCalories({ calories: cal, met: 4.0, name: null });
       }
     } else {
       setLiveCalories(null);
@@ -165,9 +92,11 @@ export default function WorkoutPage() {
   const handleNameChange = (value) => {
     setFormExercise(f => ({ ...f, name: value, caloriesBurned: '' }));
     if (value.length > 1) {
-      const filtered = EXERCISE_DATABASE.filter(e =>
-        e.name.toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 7);
+      const filtered = EXERCISE_DATABASE.filter(e => {
+        const matchesSearch = e.name.toLowerCase().includes(value.toLowerCase());
+        const matchesCategory = categoryFilter === 'All' || e.category === categoryFilter;
+        return matchesSearch && matchesCategory;
+      }).slice(0, 8);
       setSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
     } else {
@@ -179,9 +108,9 @@ export default function WorkoutPage() {
   const handleSelectSuggestion = (exercise) => {
     const cal = Math.round(exercise.met * userWeight * (formExercise.duration / 60));
     setFormExercise(f => ({ ...f, name: exercise.name, caloriesBurned: cal }));
-    setLiveCalories({ calories: cal, met: exercise.met, exerciseName: exercise.name });
+    setLiveCalories({ calories: cal, met: exercise.met, name: exercise.name });
     setShowSuggestions(false);
-    toast.success(`${exercise.name} selected — MET: ${exercise.met} 💪`);
+    toast.success(`${exercise.icon} ${exercise.name} selected!`);
   };
 
   const handleAddExercise = async () => {
@@ -192,15 +121,10 @@ export default function WorkoutPage() {
     setSaving(true);
     try {
       const exerciseData = { ...formExercise };
-      // Use live calories if user hasn't manually set them
       if (!exerciseData.caloriesBurned && liveCalories) {
         exerciseData.caloriesBurned = liveCalories.calories;
       }
-      const res = await api.post('/workout/entry', {
-        date: selectedDay,
-        exercise: exerciseData,
-        userWeight,
-      });
+      const res = await api.post('/workout/entry', { date: selectedDay, exercise: exerciseData, userWeight });
       const updatedDate = formatDate(new Date(res.data.data.date));
       setEntries(e => ({ ...e, [updatedDate]: res.data.data }));
       setFormExercise(emptyExercise);
@@ -240,17 +164,13 @@ export default function WorkoutPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">🏋️ Workout Tracker</h1>
-          <p className="text-gray-400 text-sm mt-1">Calories calculated using accurate MET values</p>
+          <p className="text-gray-400 text-sm mt-1">150+ exercises · Running, Strength, HIIT, Cricket, Yoga & more</p>
         </div>
-        {/* User weight input for accurate calorie calc */}
         <div className="flex items-center gap-2 glass rounded-xl px-3 py-2">
           <span className="text-gray-400 text-xs">Your weight:</span>
-          <input
-            type="number"
-            value={userWeight}
+          <input type="number" value={userWeight}
             onChange={e => setUserWeight(parseFloat(e.target.value) || 70)}
-            className="w-14 bg-transparent text-white text-sm font-bold text-center outline-none"
-          />
+            className="w-14 bg-transparent text-white text-sm font-bold text-center outline-none" />
           <span className="text-gray-400 text-xs">kg</span>
         </div>
       </div>
@@ -279,15 +199,11 @@ export default function WorkoutPage() {
             const isSelected = dayStr === selectedDay;
             const isToday = dayStr === formatDate(new Date());
             return (
-              <motion.button
-                key={dayStr}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <motion.button key={dayStr} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedDay(dayStr)}
                 className={`flex flex-col items-center p-3 rounded-xl min-w-[70px] transition-all
                   ${isSelected ? 'bg-gradient-to-b from-blue-600 to-purple-600 shadow-lg shadow-blue-500/30' : 'hover:bg-white/10'}
-                  ${isToday && !isSelected ? 'border border-blue-500/50' : ''}
-                `}
+                  ${isToday && !isSelected ? 'border border-blue-500/50' : ''}`}
               >
                 <span className="text-xs text-gray-400 mb-1">{DAY_SHORT[i]}</span>
                 <span className={`text-lg font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>{day.getDate()}</span>
@@ -305,16 +221,13 @@ export default function WorkoutPage() {
             <h3 className="font-semibold text-white">Today's Exercises</h3>
             {todayEntry && (
               <p className="text-sm text-gray-400 mt-0.5">
-                {exercises.length} exercise{exercises.length !== 1 ? 's' : ''} · {todayEntry.totalDuration} min · <span className="text-orange-400 font-medium">{todayEntry.totalCaloriesBurned} kcal burned</span>
+                {exercises.length} exercise{exercises.length !== 1 ? 's' : ''} · {todayEntry.totalDuration} min ·{' '}
+                <span className="text-orange-400 font-medium">{todayEntry.totalCaloriesBurned} kcal burned</span>
               </p>
             )}
           </div>
-          <button
-            onClick={() => { setAddModal(true); setFormExercise(emptyExercise); setLiveCalories(null); setSuggestions([]); }}
-            className="btn-primary text-sm px-4 py-2"
-          >
-            + Add Exercise
-          </button>
+          <button onClick={() => { setAddModal(true); setFormExercise(emptyExercise); setLiveCalories(null); setSuggestions([]); }}
+            className="btn-primary text-sm px-4 py-2">+ Add Exercise</button>
         </div>
 
         {loading ? (
@@ -329,35 +242,38 @@ export default function WorkoutPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {exercises.map((ex, idx) => (
-              <motion.div
-                key={ex._id || idx}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center justify-between p-4 bg-white/3 rounded-xl group hover:bg-white/5 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-white font-medium">{ex.name}</p>
-                    {ex.isAutoCalculated && <span className="text-xs text-blue-400 bg-blue-400/10 rounded-full px-2 py-0.5">MET auto ✨</span>}
+            {exercises.map((ex, idx) => {
+              const dbEx = EXERCISE_DATABASE.find(e => e.name === ex.name);
+              return (
+                <motion.div key={ex._id || idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                  className="flex items-center justify-between p-4 bg-white/3 rounded-xl group hover:bg-white/5 transition-colors">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {dbEx && <span>{dbEx.icon}</span>}
+                      <p className="text-white font-medium">{ex.name}</p>
+                      {dbEx && (
+                        <span className={`text-xs rounded-full px-2 py-0.5 ${CATEGORY_COLORS[dbEx.category]}`}>
+                          {dbEx.category}
+                        </span>
+                      )}
+                      {ex.isAutoCalculated && <span className="text-xs text-blue-400 bg-blue-400/10 rounded-full px-2 py-0.5">MET auto ✨</span>}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+                      <span>⏱️ {ex.duration} min</span>
+                      {ex.sets && <span>📋 {ex.sets} sets</span>}
+                      {ex.reps && <span>🔁 {ex.reps} reps</span>}
+                      {ex.weight && <span>🏋️ {ex.weight}kg</span>}
+                      <span className="text-orange-400 font-bold">🔥 {ex.caloriesBurned} kcal</span>
+                      {ex.met && <span className="text-gray-600">MET: {ex.met}</span>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                    <span>⏱️ {ex.duration} min</span>
-                    {ex.sets && <span>📋 {ex.sets} sets</span>}
-                    {ex.reps && <span>🔁 {ex.reps} reps</span>}
-                    {ex.weight && <span>🏋️ {ex.weight}kg</span>}
-                    <span className="text-orange-400 font-bold">🔥 {ex.caloriesBurned} kcal</span>
-                    {ex.met && <span className="text-gray-600">MET: {ex.met}</span>}
-                  </div>
-                </div>
-                <button
-                  onClick={() => setDeleteModal({ open: true, data: { entryId: todayEntry._id, exerciseId: ex._id } })}
-                  className="hidden group-hover:block text-red-400 hover:text-red-300 ml-4 text-lg"
-                >
-                  🗑️
-                </button>
-              </motion.div>
-            ))}
+                  <button
+                    onClick={() => setDeleteModal({ open: true, data: { entryId: todayEntry._id, exerciseId: ex._id } })}
+                    className="hidden group-hover:block text-red-400 hover:text-red-300 ml-4 text-lg"
+                  >🗑️</button>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -370,44 +286,55 @@ export default function WorkoutPage() {
         size="md"
       >
         <div className="space-y-4">
+          {/* Category filter chips */}
+          <div>
+            <label className="text-xs text-gray-400 mb-2 block">Filter by category</label>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORIES.map(cat => (
+                <button key={cat} onClick={() => setCategoryFilter(cat)}
+                  className={`text-xs px-3 py-1 rounded-full transition-all ${
+                    categoryFilter === cat ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  }`}>
+                  {cat === 'All' ? '🌐 All' : CATEGORY_LABELS[cat]}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Exercise name with autocomplete */}
           <div className="relative" ref={suggestionRef}>
-            <label className="text-xs text-gray-400 mb-1 block">Exercise Name * <span className="text-blue-400">(start typing for suggestions)</span></label>
+            <label className="text-xs text-gray-400 mb-1 block">
+              Exercise Name * <span className="text-blue-400">(type to search 150+ exercises)</span>
+            </label>
             <input
               className="input-field"
               value={formExercise.name}
               onChange={e => handleNameChange(e.target.value)}
               onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
-              placeholder="e.g., Running, Bench Press, Cricket..."
+              placeholder="e.g., Running, Bench Press, Cricket, Yoga..."
               autoComplete="off"
             />
             <AnimatePresence>
               {showSuggestions && suggestions.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/10 rounded-xl overflow-hidden shadow-2xl"
-                >
+                <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-64 overflow-y-auto">
                   {suggestions.map((ex, i) => {
                     const previewCal = Math.round(ex.met * userWeight * (formExercise.duration / 60));
                     return (
-                      <button
-                        key={i}
-                        onMouseDown={() => handleSelectSuggestion(ex)}
-                        className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-0"
-                      >
+                      <button key={i} onMouseDown={() => handleSelectSuggestion(ex)}
+                        className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-0">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span>{ex.icon}</span>
                             <span className="text-white text-sm font-medium">{ex.name}</span>
-                            <span className={`text-xs ${CATEGORY_COLORS[ex.category]}`}>{ex.category}</span>
+                            <span className={`text-xs rounded-full px-1.5 py-0.5 ${CATEGORY_COLORS[ex.category]}`}>{ex.category}</span>
                           </div>
                           <div className="text-right">
                             <span className="text-orange-400 text-xs font-bold">~{previewCal} kcal</span>
                             <span className="text-gray-600 text-xs ml-1">MET:{ex.met}</span>
                           </div>
                         </div>
+                        {ex.description && <p className="text-gray-600 text-xs mt-0.5 ml-6">{ex.description}</p>}
                       </button>
                     );
                   })}
@@ -419,30 +346,22 @@ export default function WorkoutPage() {
           {/* Duration */}
           <div>
             <label className="text-xs text-gray-400 mb-1 block">Duration (minutes) *</label>
-            <input
-              className="input-field"
-              type="number"
-              value={formExercise.duration}
+            <input className="input-field" type="number" value={formExercise.duration}
               onChange={e => setFormExercise(f => ({ ...f, duration: parseFloat(e.target.value) || 0, caloriesBurned: '' }))}
-              placeholder="30"
-            />
+              placeholder="30" />
           </div>
 
           {/* Live calorie preview */}
           <AnimatePresence>
             {liveCalories && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3"
-              >
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-orange-400 font-bold text-lg">🔥 ~{liveCalories.calories} kcal</p>
                     <p className="text-gray-500 text-xs mt-0.5">
-                      MET: {liveCalories.met} × {userWeight}kg × {(formExercise.duration/60).toFixed(2)}h
-                      {!liveCalories.exerciseName && <span className="text-yellow-500"> (using default MET — select from suggestions for accuracy)</span>}
+                      MET {liveCalories.met} × {userWeight}kg × {(formExercise.duration / 60).toFixed(2)}h
+                      {!liveCalories.name && <span className="text-yellow-500 ml-1">(default MET — select from list for accuracy)</span>}
                     </p>
                   </div>
                   <span className="text-2xl">⚡</span>
@@ -455,27 +374,26 @@ export default function WorkoutPage() {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Sets</label>
-              <input className="input-field" type="number" value={formExercise.sets} onChange={e => setFormExercise(f => ({ ...f, sets: e.target.value }))} placeholder="3" />
+              <input className="input-field" type="number" value={formExercise.sets}
+                onChange={e => setFormExercise(f => ({ ...f, sets: e.target.value }))} placeholder="3" />
             </div>
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Reps</label>
-              <input className="input-field" type="number" value={formExercise.reps} onChange={e => setFormExercise(f => ({ ...f, reps: e.target.value }))} placeholder="12" />
+              <input className="input-field" type="number" value={formExercise.reps}
+                onChange={e => setFormExercise(f => ({ ...f, reps: e.target.value }))} placeholder="12" />
             </div>
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Weight (kg)</label>
-              <input className="input-field" type="number" value={formExercise.weight} onChange={e => setFormExercise(f => ({ ...f, weight: e.target.value }))} placeholder="60" />
+              <input className="input-field" type="number" value={formExercise.weight}
+                onChange={e => setFormExercise(f => ({ ...f, weight: e.target.value }))} placeholder="60" />
             </div>
           </div>
 
           <div>
             <label className="text-xs text-gray-400 mb-1 block">Calories Burned (override)</label>
-            <input
-              className="input-field"
-              type="number"
-              value={formExercise.caloriesBurned}
+            <input className="input-field" type="number" value={formExercise.caloriesBurned}
               onChange={e => setFormExercise(f => ({ ...f, caloriesBurned: parseFloat(e.target.value) || '' }))}
-              placeholder={liveCalories ? `Auto: ${liveCalories.calories}` : "Leave blank for auto-calculate"}
-            />
+              placeholder={liveCalories ? `Auto: ${liveCalories.calories}` : 'Leave blank to auto-calculate'} />
             <p className="text-xs text-gray-600 mt-1">Leave blank to use MET-based auto-calculation</p>
           </div>
 
@@ -485,19 +403,15 @@ export default function WorkoutPage() {
               {saving ? 'Logging...' : '+ Log Exercise'}
             </button>
           </div>
-          <p className="text-xs text-gray-500 text-center">Click "+ Log Exercise" to add more, or "Done" when finished</p>
+          <p className="text-xs text-gray-500 text-center">Click "+ Log Exercise" to add more, "Done" when finished</p>
         </div>
       </Modal>
 
-      {/* Confirm Delete */}
       <ConfirmModal
         isOpen={deleteModal.open}
         onClose={() => setDeleteModal({ open: false, data: null })}
         onConfirm={() => handleDeleteExercise(deleteModal.data)}
-        title="Remove Exercise"
-        message="Are you sure you want to remove this exercise?"
-        confirmText="Remove"
-        danger
+        title="Remove Exercise" message="Remove this exercise?" confirmText="Remove" danger
       />
     </div>
   );
